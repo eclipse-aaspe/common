@@ -1,2 +1,2 @@
 # aaspe-common
-aaspe common components
+AASPE Common Components for AASPE and AASX-Server
