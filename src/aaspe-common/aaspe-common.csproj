@@ -15,7 +15,7 @@
     <PackageProjectUrl>https://projects.eclipse.org/projects/dt.aaspe</PackageProjectUrl>
     <RepositoryUrl>https://github.com/eclipse-aaspe/aaspe-common</RepositoryUrl>
     <PackageTags>aas; industrie4.0</PackageTags>
-    <NeutralLanguage>ak</NeutralLanguage>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   
 </Project>
