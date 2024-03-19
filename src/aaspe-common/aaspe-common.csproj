@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>aaspe_common</RootNamespace>
@@ -16,6 +15,17 @@
     <RepositoryUrl>https://github.com/eclipse-aaspe/aaspe-common</RepositoryUrl>
     <PackageTags>aas; industrie4.0</PackageTags>
     <Platforms>x64</Platforms>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>favicon.png</PackageIcon>
   </PropertyGroup>
-  
+  <ItemGroup>
+    <None Update="assets\favicon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="assets\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>  
 </Project>
