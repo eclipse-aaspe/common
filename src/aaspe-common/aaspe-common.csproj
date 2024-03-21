@@ -8,8 +8,8 @@
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
-    <Version>1.0.3</Version>
-    <PackageId>AASPE.Common</PackageId>
+	  <Version>1.0.5</Version><!--<Version>$(VersionPrefix)</Version>-->
+    <PackageId>Aaspe.Common</PackageId>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://projects.eclipse.org/projects/dt.aaspe</PackageProjectUrl>
     <RepositoryUrl>https://github.com/eclipse-aaspe/aaspe-common</RepositoryUrl>
@@ -19,13 +19,13 @@
     <PackageIcon>favicon.png</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
-    <None Update="assets\favicon.png">
+    <Content Include="assets\favicon.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
-    </None>
-    <None Update="assets\README.md">
+    </Content>
+	  <Content Include="assets\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
-    </None>
+    </Content>
   </ItemGroup>  
 </Project>

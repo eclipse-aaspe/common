@@ -1,7 +1,6 @@
 # aaspe-common
 
 AASPE Common Components for AASPE and AASX-Server  
-AASPE AasCore Library for V3.0 AAS Specification  
 
 ## included components and namespaces
 
@@ -19,3 +18,7 @@ AASPE AasCore Library for V3.0 AAS Specification
 Available as a nuget:
 
 https://www.nuget.org/packages/AASPE.Common
+
+## See also
+
+[AASPE AasCore Library /V3.0 AAS Specification/ for AASPE and AASX-Server](https://www.nuget.org/packages/AASPE.AasCore)
