@@ -12,7 +12,7 @@ AASPE AasCore Library for V3.0 AAS Specification
 - es6numberserializer
     - Org.Webpki.JsonCanonicalizer
 - SSIExtension
-    -SSIExtension
+    - SSIExtension
 
 ## how-to
 
