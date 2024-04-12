@@ -7,12 +7,21 @@ AASPE AasCore Library /V3.0 AAS Specification/ for AASPE and AASX-Server
 
 Aaspe.Common (aaspe-common)
 
-- jsoncanonicalizer
-    - Org.Webpki.Es6NumberSerialization
-- es6numberserializer
-    - Org.Webpki.JsonCanonicalizer
-- SSIExtension
-    -SSIExtension
+- `AasxCsharpLibrary`:
+    - `AasxCompatibilityModels`
+    - `AasxIntegrationBase`
+    - `AdminShell_V20`
+    - `AdminShellNS`
+    - `AdminShellNS.Exceptions`
+    - `AdminShellNS.Extensions`
+    - `Extensions`
+    - `Extensions.ArrayExtensions`
+- `jsoncanonicalizer`
+    - `Org.Webpki.Es6NumberSerialization`
+- `es6numberserializer`
+    - `Org.Webpki.JsonCanonicalizer`
+- `SSIExtension`
+    - `SSIExtension`
 
 Aaspe.AasCore (aaspe-aascore)
 
