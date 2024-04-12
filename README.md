@@ -58,6 +58,8 @@ Add a new nuget source:
 
 Add the nuget to a project:
 
+1. *(remove the projects contained in the nuget from the repo and dependencies)*
+
 1. R-click the project (e.g. `AasxPackageLogic`) > Manage nugets
 
 1. If using a local nuget: change `Package source` to the new source `local nugets`
