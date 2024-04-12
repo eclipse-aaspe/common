@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <Title>Eclipse AASX Package Explorer and Server - AasCoreLibrary </Title>
     <PackageId>Aaspe.AasCore</PackageId>
-	<Version>1.0.1</Version>
+	<Version>1.0.2</Version>
     <PackageProjectUrl>https://projects.eclipse.org/projects/dt.aaspe</PackageProjectUrl>
     <RepositoryUrl>https://github.com/eclipse-aaspe/aaspe-common</RepositoryUrl>
     <PackageTags>aas; industrie4.0</PackageTags>
