@@ -27,12 +27,6 @@ Aaspe.AasCore (aaspe-aascore)
 
 ## usage
 
-### building a nuget
-
-See [documentation.md]() (tbd)
-
-### using a nuget
-
 Nugets can be either pulled from the Ether (nuget.org) or from a local storage.  
 Think Release/Debug builds.
 
@@ -66,4 +60,10 @@ Add the nuget to a project:
 
 1. Install the nuget.
 
-Enjoy.
+1. *(in case of problems with the nuget installation, try [`Update-Package –reinstall Aaspe.Common`](https://docs.nuget.org/consume/reinstalling-packages))*
+
+1. Enjoy.
+
+## build
+
+See [documentation.md]() (tbd)
