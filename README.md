@@ -1,4 +1,4 @@
-# aaspe-common
+# AASX Common Libraries
 
 AASPE Common Components Library for AASPE and AASX-Server  
 AASPE AasCore Library /V3.0 AAS Specification/ for AASPE and AASX-Server  
