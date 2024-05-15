@@ -1,10 +1,11 @@
 ﻿using System.Globalization;
+using aaspe_common.jsoncanonicalizer;
 using FluentAssertions;
 using Org.Webpki.JsonCanonicalizer;
 
 namespace aaspe_common_tests.jsoncanonicalizer;
 
-public class JsonToNumberTests
+public class JsonConverterTests
 {
     [Theory]
     [InlineData("123", 123)]
@@ -15,7 +16,7 @@ public class JsonToNumberTests
     public void Convert_ShouldParseValidNumberStrings(string input, double expected)
     {
         // Act
-        var result = JsonToNumber.Convert(input);
+        var result = JsonConverter.ToDouble(input);
 
         // Assert
         result.Should().Be(expected);
@@ -29,7 +30,7 @@ public class JsonToNumberTests
     public void Convert_ShouldThrowFormatException_ForInvalidNumberStrings(string input)
     {
         // Act
-        Action act = () => JsonToNumber.Convert(input);
+        Action act = () => JsonConverter.ToDouble(input);
 
         // Assert
         act.Should().Throw<FormatException>();
@@ -39,7 +40,7 @@ public class JsonToNumberTests
     public void Convert_ShouldThrowArgumentNullException_ForNullInput()
     {
         // Act
-        Action act = () => JsonToNumber.Convert(null);
+        Action act = () => JsonConverter.ToDouble(null);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
@@ -53,7 +54,7 @@ public class JsonToNumberTests
         const double expected = 123.45;
 
         // Act
-        var result = JsonToNumber.Convert(numberString);
+        var result = JsonConverter.ToDouble(numberString);
 
         // Assert
         result.Should().Be(expected);

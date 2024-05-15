@@ -126,7 +126,7 @@ internal class JsonDecoder
 
         if (NumberPattern.IsMatch(token))
         {
-            return JsonToNumber.Convert(token);
+            return JsonConverter.ToDouble(token);
         }
 
         if (BooleanPattern.IsMatch(token))
