@@ -36,58 +36,61 @@ public class JsonCanonicalizer
     {
     }
 
-    private void Escape(char c)
-    {
-        buffer.Append('\\').Append(c);
-    }
-
     private void SerializeString(string value)
     {
-        buffer.Append('"');
+        var result = new StringBuilder();
+        result.Append('"');
+
         foreach (var c in value)
         {
-            switch (c)
-            {
-                case '\n':
-                    Escape('n');
-                    break;
-
-                case '\b':
-                    Escape('b');
-                    break;
-
-                case '\f':
-                    Escape('f');
-                    break;
-
-                case '\r':
-                    Escape('r');
-                    break;
-
-                case '\t':
-                    Escape('t');
-                    break;
-
-                case '"':
-                case '\\':
-                    Escape(c);
-                    break;
-
-                default:
-                    if (c < ' ')
-                    {
-                        buffer.Append("\\u").Append(((int) c).ToString("x04"));
-                    }
-                    else
-                    {
-                        buffer.Append(c);
-                    }
-
-                    break;
-            }
+            EscapeCharacter(result, c);
         }
 
-        buffer.Append('"');
+        result.Append('"');
+        buffer.Append(result);
+    }
+
+    private void EscapeCharacter(StringBuilder result, char c)
+    {
+        switch (c)
+        {
+            case '\n':
+                result.Append("\\n");
+                break;
+
+            case '\b':
+                result.Append("\\b");
+                break;
+
+            case '\f':
+                result.Append("\\f");
+                break;
+
+            case '\r':
+                result.Append("\\r");
+                break;
+
+            case '\t':
+                result.Append("\\t");
+                break;
+
+            case '"':
+            case '\\':
+                result.Append('\\').Append(c);
+                break;
+
+            default:
+                if (c < ' ')
+                {
+                    result.Append("\\u").Append(((int) c).ToString("x04"));
+                }
+                else
+                {
+                    result.Append(c);
+                }
+
+                break;
+        }
     }
 
     void Serialize(object? o)
