@@ -259,7 +259,7 @@ public class JsonDecoderTests
         Action act = () => new JsonDecoder(jsonData);
 
         // Assert
-        act.Should().Throw<IOException>().WithMessage("Unsupported escape:x");
+        act.Should().Throw<IOException>().WithMessage("Unsupported escape: x");
     }
 
     [Fact]

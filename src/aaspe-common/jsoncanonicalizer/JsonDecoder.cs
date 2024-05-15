@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
-using Org.Webpki.JsonCanonicalizer;
 
 namespace aaspe_common.jsoncanonicalizer;
 
@@ -150,7 +149,7 @@ internal class JsonDecoder
             var c = NextChar();
             if (c < ' ')
             {
-                throw new IOException(c == '\n' ? "Unterminated string literal" : "Unescaped control character: 0x" + ((int) c).ToString("x02"));
+                throw new IOException(c == '\n' ? "Unterminated string literal" : $"Unescaped control character: 0x{((int) c):x02}");
             }
 
             if (c == DoubleQuote)
@@ -160,51 +159,52 @@ internal class JsonDecoder
 
             if (c == BackSlash)
             {
-                switch (c = NextChar())
-                {
-                    case '"':
-                    case '\\':
-                    case '/':
-                        break;
-
-                    case 'b':
-                        c = '\b';
-                        break;
-
-                    case 'f':
-                        c = '\f';
-                        break;
-
-                    case 'n':
-                        c = '\n';
-                        break;
-
-                    case 'r':
-                        c = '\r';
-                        break;
-
-                    case 't':
-                        c = '\t';
-                        break;
-
-                    case 'u':
-                        c = (char) 0;
-                        for (var i = 0; i < 4; i++)
-                        {
-                            c = (char) ((c << 4) + GetHexChar());
-                        }
-
-                        break;
-
-                    default:
-                        throw new IOException("Unsupported escape:" + c);
-                }
+                c = HandleEscapeSequence();
             }
 
             result.Append(c);
         }
 
         return result.ToString();
+    }
+
+    private char HandleEscapeSequence()
+    {
+        var c = NextChar();
+        switch (c)
+        {
+            case '"':
+            case '\\':
+            case '/':
+                return c;
+
+            case 'b':
+                return '\b';
+
+            case 'f':
+                return '\f';
+
+            case 'n':
+                return '\n';
+
+            case 'r':
+                return '\r';
+
+            case 't':
+                return '\t';
+
+            case 'u':
+                var hexValue = 0;
+                for (var i = 0; i < 4; i++)
+                {
+                    hexValue = (hexValue << 4) + GetHexChar();
+                }
+
+                return (char) hexValue;
+
+            default:
+                throw new IOException($"Unsupported escape: {c}");
+        }
     }
 
     private char GetHexChar()
@@ -215,7 +215,7 @@ internal class JsonDecoder
             '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => (char) (c - '0'),
             'a' or 'b' or 'c' or 'd' or 'e' or 'f' => (char) (c - 'a' + 10),
             'A' or 'B' or 'C' or 'D' or 'E' or 'F' => (char) (c - 'A' + 10),
-            _ => throw new IOException("Bad hex in \\u escape: " + c)
+            _ => throw new IOException($"Bad hex in \\u escape: {c}")
         };
     }
 
@@ -232,7 +232,7 @@ internal class JsonDecoder
         var c = Scan();
         if (c != expected)
         {
-            throw new IOException("Expected '" + expected + "' but got '" + c + "'");
+            throw new IOException($"Expected '{expected}' but got '{c}'");
         }
     }
 
