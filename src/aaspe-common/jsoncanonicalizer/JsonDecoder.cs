@@ -260,15 +260,16 @@ internal class JsonDecoder
 
     private char Scan()
     {
-        while (true)
+        char c;
+        while ((c = NextChar()) != '\0')
         {
-            var c = NextChar();
-            if (IsWhiteSpace(c))
+            if (!IsWhiteSpace(c))
             {
-                continue;
+                return c;
             }
-
-            return c;
         }
+
+        throw new IOException("Unexpected EOF reached");
     }
+
 }
