@@ -145,7 +145,7 @@ internal class JsonDecoder
             return null;
         }
 
-        throw new IOException("Unrecognized or malformed JSON token: " + token);
+        throw new IOException($"Unrecognized or malformed JSON token: {token}");
     }
 
     private string ParseQuotedString()
