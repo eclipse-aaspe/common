@@ -1,4 +1,7 @@
-﻿namespace aaspe_common.jsoncanonicalizer
+﻿using System;
+using System.IO;
+
+namespace aaspe_common.jsoncanonicalizer
 {
     internal class JsonScanner
     {
@@ -58,7 +61,7 @@
 
         public bool IsNextCharacterWhiteSpace()
         {
-            return char.IsWhiteSpace(_jsonData[_currentIndex++]);
+            return IsIndexWithinJsonLength() && char.IsWhiteSpace(PeekNextNonWhiteSpaceCharacter());
         }
 
         public void MoveBackToPreviousCharacter()
@@ -67,8 +70,10 @@
             {
                 _currentIndex = 0;
             }
-
-            _currentIndex--;
+            else
+            {
+                _currentIndex--;
+            }
         }
     }
 }
