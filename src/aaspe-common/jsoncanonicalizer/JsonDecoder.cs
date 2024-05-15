@@ -27,7 +27,7 @@ internal class JsonDecoder
     private int _index;
     private readonly string _jsonData;
 
-    internal readonly object Root;
+    internal readonly object? Root;
 
     public JsonDecoder(string jsonData)
     {
@@ -52,7 +52,7 @@ internal class JsonDecoder
         }
     }
 
-    private object ParseElement()
+    private object? ParseElement()
     {
         return Scan() switch
         {
@@ -63,10 +63,10 @@ internal class JsonDecoder
         };
     }
 
-    private object ParseObject()
+    private object? ParseObject()
     {
         var dict =
-            new SortedDictionary<string, object>(StringComparer.Ordinal);
+            new SortedDictionary<string, object?>(StringComparer.Ordinal);
         var next = false;
         while (TestNextNonWhiteSpaceChar() != RightCurlyBracket)
         {
@@ -86,7 +86,7 @@ internal class JsonDecoder
         return dict;
     }
 
-    private object ParseArray()
+    private object? ParseArray()
     {
         var list = new List<object>();
         var next = false;
@@ -108,14 +108,14 @@ internal class JsonDecoder
         return list;
     }
 
-    private object ParseSimpleType()
+    private object? ParseSimpleType()
     {
         _index--;
         var tempBuffer = new StringBuilder();
         char c;
         while ((c = TestNextNonWhiteSpaceChar()) != CommaCharacter && c != RightBracket && c != RightCurlyBracket)
         {
-            c = NextChar();
+            c = NextChar(_jsonData, ref _index);
             if (IsWhiteSpace(c))
             {
                 break;
@@ -148,12 +148,12 @@ internal class JsonDecoder
         throw new IOException($"Unrecognized or malformed JSON token: {token}");
     }
 
-    private string ParseQuotedString()
+    private string? ParseQuotedString()
     {
         var result = new StringBuilder();
         while (true)
         {
-            var c = NextChar();
+            var c = NextChar(_jsonData, ref _index);
             if (c < ' ')
             {
                 throw new IOException(c == '\n' ? "Unterminated string literal" : $"Unescaped control character: 0x{((int) c):x02}");
@@ -177,7 +177,7 @@ internal class JsonDecoder
 
     private char HandleEscapeSequence()
     {
-        var c = NextChar();
+        var c = NextChar(_jsonData, ref _index);
         switch (c)
         {
             case '"':
@@ -216,7 +216,7 @@ internal class JsonDecoder
 
     private char GetHexChar()
     {
-        var c = NextChar();
+        var c = NextChar(_jsonData, ref _index);
         return c switch
         {
             '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => (char) (c - '0'),
@@ -243,15 +243,16 @@ internal class JsonDecoder
         }
     }
 
-    private char NextChar()
+    private static char NextChar(string jsonData, ref int index)
     {
-        if (_index < _jsonData.Length)
+        if (index < jsonData.Length)
         {
-            return _jsonData[_index++];
+            return jsonData[index++];
         }
 
         throw new IOException("Unexpected EOF reached");
     }
+
 
     private static bool IsWhiteSpace(char c)
     {
@@ -261,7 +262,7 @@ internal class JsonDecoder
     private char Scan()
     {
         char c;
-        while ((c = NextChar()) != '\0')
+        while ((c = NextChar(_jsonData, ref _index)) != '\0')
         {
             if (!IsWhiteSpace(c))
             {
@@ -271,5 +272,4 @@ internal class JsonDecoder
 
         throw new IOException("Unexpected EOF reached");
     }
-
 }

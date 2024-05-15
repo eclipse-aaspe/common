@@ -89,13 +89,13 @@ public class JsonCanonicalizer
         buffer.Append('"');
     }
 
-    void Serialize(object o)
+    void Serialize(object? o)
     {
         if (o is SortedDictionary<string, object>)
         {
             buffer.Append('{');
             bool next = false;
-            foreach (var keyValuePair in (SortedDictionary<string, object>)o)
+            foreach (var keyValuePair in (SortedDictionary<string, object?>)o)
             {
                 if (next)
                 {
@@ -112,7 +112,7 @@ public class JsonCanonicalizer
         {
             buffer.Append('[');
             bool next = false;
-            foreach (object value in (List<object>)o)
+            foreach (object? value in (List<object?>)o)
             {
                 if (next)
                 {
