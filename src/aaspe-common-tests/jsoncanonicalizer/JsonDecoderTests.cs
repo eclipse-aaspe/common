@@ -12,11 +12,11 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"value\"}";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
-        var dict = (SortedDictionary<string, object>) decoder.Root;
+        decoder.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder;
         dict.Should().ContainKey("key");
         dict["key"].Should().Be("value");
     }
@@ -28,11 +28,11 @@ public class JsonDecoderTests
         const string jsonData = "[1, 2, 3]";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<List<object>>();
-        var list = (List<object>) decoder.Root;
+        decoder.Should().BeOfType<List<object>>();
+        var list = (List<object>) decoder;
         list.Should().Equal(1.0, 2.0, 3.0);
     }
 
@@ -43,7 +43,7 @@ public class JsonDecoderTests
         const string jsonData = "{ key: value }"; // Missing quotes around key and value
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Expected '\"' but got 'k'");
@@ -56,7 +56,7 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"value\" something else}";
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Expected ',' but got 's'");
@@ -69,11 +69,11 @@ public class JsonDecoderTests
         const string jsonData = "{\"number\":123.45,\"boolean\":true,\"nullValue\":null,\"string\":\"value\"}";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
-        var dict = (SortedDictionary<string, object>) decoder.Root;
+        decoder.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder;
         dict["number"].Should().Be(123.45);
         dict["boolean"].Should().Be(true);
         dict["nullValue"].Should().BeNull();
@@ -87,11 +87,11 @@ public class JsonDecoderTests
         const string jsonData = "{\"nestedArray\":[{\"innerKey\":\"innerValue\"}],\"nestedObject\":{\"key\":\"value\"}}";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
-        var dict = (SortedDictionary<string, object>) decoder.Root;
+        decoder.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder;
 
         // Verify nested array
         dict["nestedArray"].Should().BeOfType<List<object>>();
@@ -114,11 +114,11 @@ public class JsonDecoderTests
         const string jsonData = "   { \"key\" : \"value\" }   ";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
-        var dict = (SortedDictionary<string, object>) decoder.Root;
+        decoder.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder;
         dict.Should().ContainKey("key");
         dict["key"].Should().Be("value");
     }
@@ -130,11 +130,11 @@ public class JsonDecoderTests
         const string jsonData = "[123, true, null, \"value\"]";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<List<object>>();
-        var list = (List<object>) decoder.Root;
+        decoder.Should().BeOfType<List<object>>();
+        var list = (List<object>) decoder;
         list.Count.Should().Be(3);
         list[0].Should().Be(123.0);
         list[1].Should().Be(true);
@@ -146,10 +146,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "{\"key\":\"value\\nnew line\\t tab\"}";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var result = (SortedDictionary<string, object>) decoder;
         var value = (string) result["key"];
 
         // Assert
@@ -161,10 +161,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "[{\"key\":\"value\"}, [1, 2, 3], \"string\", true, false, null]";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (List<object>) decoder.Root;
+        var result = (List<object>) decoder;
 
         // Assert
         result.Count.Should().Be(5);
@@ -180,10 +180,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "{\"outer\":{\"inner\":{\"key\":\"value\"}}}";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var result = (SortedDictionary<string, object>) decoder;
         var outer = (SortedDictionary<string, object>) result["outer"];
         var inner = (SortedDictionary<string, object>) outer["inner"];
         var value = (string) inner["key"];
@@ -197,10 +197,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "[42.42]";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (List<object>) decoder.Root;
+        var result = (List<object>) decoder;
         var value = (double) result[0];
 
         // Assert
@@ -212,10 +212,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "[true, false]";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (List<object>) decoder.Root;
+        var result = (List<object>) decoder;
 
         // Assert
         result[0].Should().Be(true);
@@ -227,10 +227,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "[null]";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (List<object>) decoder.Root;
+        var result = (List<object>) decoder;
 
         // Assert
         result.Count.Should().Be(0);
@@ -243,7 +243,7 @@ public class JsonDecoderTests
         const string jsonData = "[unrecognized]"; // Unquoted and unrecognized token
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Unrecognized or malformed JSON token: unrecognized");
@@ -256,7 +256,7 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"value\\x\"}"; // Invalid escape sequence
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Unsupported escape: x");
@@ -269,7 +269,7 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"value"; // Unterminated string
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Unexpected EOF reached");
@@ -282,7 +282,7 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"value\n\"}"; // Control character in string
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Unterminated string literal");
@@ -295,11 +295,11 @@ public class JsonDecoderTests
         const string jsonData = "{  \"key\"  :   \"value\"  }";
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Assert
-        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
-        var dict = (SortedDictionary<string, object>) decoder.Root;
+        decoder.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder;
         dict.Should().ContainKey("key");
         dict["key"].Should().Be("value");
     }
@@ -309,10 +309,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "{\"key1\":\"value1\",\"key2\":42,\"key3\":true,\"key4\":null}";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var result = (SortedDictionary<string, object>) decoder;
 
         // Assert
         result["key1"].Should().Be("value1");
@@ -326,10 +326,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "{\"key\":\"\\u0041\\u0042\\u0043\"}";
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var result = (SortedDictionary<string, object>) decoder;
         var value = (string) result["key"];
 
         // Assert
@@ -343,7 +343,7 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"\\u004X\"}"; // Invalid hex character 'X'
 
         // Act
-        Action act = () => new JsonDecoder(jsonData);
+        Action act = () => new JsonDecoder().Decode(jsonData);
 
         // Assert
         act.Should().Throw<IOException>().WithMessage("Bad hex in \\u escape: X");
@@ -356,8 +356,8 @@ public class JsonDecoderTests
         const string jsonData = "{\"key\":\"\\u0068\\u0065\\u006C\\u006C\\u006F\"}"; // "hello" in hex
 
         // Act
-        var decoder = new JsonDecoder(jsonData);
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var decoder = new JsonDecoder().Decode(jsonData);
+        var result = (SortedDictionary<string, object>) decoder;
         var value = (string) result["key"];
 
         // Assert
@@ -369,10 +369,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "{\"key\":\"\\u0061\\u0062\\u0063\"}"; // "abc"
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var result = (SortedDictionary<string, object>) decoder;
         var value = (string) result["key"];
 
         // Assert
@@ -384,10 +384,10 @@ public class JsonDecoderTests
     {
         // Arrange
         const string jsonData = "{\"key\":\"\\u0041\\u0062\\u0043\\u0064\"}"; // "AbCd"
-        var decoder = new JsonDecoder(jsonData);
+        var decoder = new JsonDecoder().Decode(jsonData);
 
         // Act
-        var result = (SortedDictionary<string, object>) decoder.Root;
+        var result = (SortedDictionary<string, object>) decoder;
         var value = (string) result["key"];
 
         // Assert

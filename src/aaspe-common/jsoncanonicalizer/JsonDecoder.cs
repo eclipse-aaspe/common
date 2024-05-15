@@ -24,22 +24,22 @@ internal class JsonDecoder
 
     private static readonly Regex BooleanPattern = new("^true|false$");
 
-    private readonly IJsonScanner _jsonScanner;
+    private IJsonScanner? _jsonScanner;
 
-    internal readonly object? Root;
+    private object? _root;
 
-    public JsonDecoder(string jsonData)
+    public object? Decode(string jsonData)
     {
         _jsonScanner = new JsonScanner(jsonData);
         if (_jsonScanner.PeekNextNonWhiteSpaceCharacter() == LeftBracket)
         {
             _jsonScanner.Scan();
-            Root = ParseArray();
+            _root = ParseArray();
         }
         else
         {
             _jsonScanner.ScanForNextCharacter(LeftCurlyBracket);
-            Root = ParseObject();
+            _root = ParseObject();
         }
 
         while (_jsonScanner.IsIndexWithinJsonLength())
@@ -51,6 +51,8 @@ internal class JsonDecoder
 
             _jsonScanner.MoveToNextCharacter();
         }
+
+        return _root;
     }
 
     private object? ParseElement()
@@ -117,16 +119,16 @@ internal class JsonDecoder
     {
         _jsonScanner.MoveBackToPreviousCharacter();
         var tempBuffer = new StringBuilder();
-        char c;
-        while ((c = _jsonScanner.PeekNextNonWhiteSpaceCharacter()) != CommaCharacter && c != RightBracket && c != RightCurlyBracket)
+        char currentCharacter;
+        while ((currentCharacter = _jsonScanner.PeekNextNonWhiteSpaceCharacter()) != CommaCharacter && currentCharacter != RightBracket && currentCharacter != RightCurlyBracket)
         {
-            c = _jsonScanner.GetNextCharacter();
-            if (char.IsWhiteSpace(c))
+            currentCharacter = _jsonScanner.GetNextCharacter();
+            if (char.IsWhiteSpace(currentCharacter))
             {
                 break;
             }
 
-            tempBuffer.Append(c);
+            tempBuffer.Append(currentCharacter);
         }
 
         var token = tempBuffer.ToString();
@@ -158,23 +160,23 @@ internal class JsonDecoder
         var result = new StringBuilder();
         while (true)
         {
-            var c = _jsonScanner.GetNextCharacter();
-            if (c < ' ')
+            var currentCharacter = _jsonScanner.GetNextCharacter();
+            if (currentCharacter < ' ')
             {
-                throw new IOException(c == '\n' ? "Unterminated string literal" : $"Unescaped control character: 0x{((int) c):x02}");
+                throw new IOException(currentCharacter == '\n' ? "Unterminated string literal" : $"Unescaped control character: 0x{((int) currentCharacter):x02}");
             }
 
-            if (c == DoubleQuote)
+            if (currentCharacter == DoubleQuote)
             {
                 break;
             }
 
-            if (c == BackSlash)
+            if (currentCharacter == BackSlash)
             {
-                c = HandleEscapeSequence();
+                currentCharacter = HandleEscapeSequence();
             }
 
-            result.Append(c);
+            result.Append(currentCharacter);
         }
 
         return result.ToString();
@@ -182,13 +184,13 @@ internal class JsonDecoder
 
     private char HandleEscapeSequence()
     {
-        var c = _jsonScanner.GetNextCharacter();
-        switch (c)
+        var currentCharacter = _jsonScanner.GetNextCharacter();
+        switch (currentCharacter)
         {
             case '"':
             case '\\':
             case '/':
-                return c;
+                return currentCharacter;
 
             case 'b':
                 return '\b';
@@ -215,19 +217,19 @@ internal class JsonDecoder
                 return (char) hexValue;
 
             default:
-                throw new IOException($"Unsupported escape: {c}");
+                throw new IOException($"Unsupported escape: {currentCharacter}");
         }
     }
 
     private char GetHexChar()
     {
-        var c = _jsonScanner.GetNextCharacter();
-        return c switch
+        var currentCharacter = _jsonScanner.GetNextCharacter();
+        return currentCharacter switch
         {
-            '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => (char) (c - '0'),
-            'a' or 'b' or 'c' or 'd' or 'e' or 'f' => (char) (c - 'a' + 10),
-            'A' or 'B' or 'C' or 'D' or 'E' or 'F' => (char) (c - 'A' + 10),
-            _ => throw new IOException($"Bad hex in \\u escape: {c}")
+            '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => (char) (currentCharacter - '0'),
+            'a' or 'b' or 'c' or 'd' or 'e' or 'f' => (char) (currentCharacter - 'a' + 10),
+            'A' or 'B' or 'C' or 'D' or 'E' or 'F' => (char) (currentCharacter - 'A' + 10),
+            _ => throw new IOException($"Bad hex in \\u escape: {currentCharacter}")
         };
     }
 }

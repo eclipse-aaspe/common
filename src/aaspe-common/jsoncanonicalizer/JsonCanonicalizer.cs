@@ -28,13 +28,12 @@ public class JsonCanonicalizer
     public JsonCanonicalizer(string jsonData)
     {
         buffer = new StringBuilder();
-        Serialize(new JsonDecoder(jsonData).Root);
+        Serialize(new JsonDecoder().Decode(jsonData));
     }
 
     public JsonCanonicalizer(byte[] jsonData)
         : this(new UTF8Encoding(false, true).GetString(jsonData))
     {
-
     }
 
     private void Escape(char c)
@@ -45,7 +44,7 @@ public class JsonCanonicalizer
     private void SerializeString(string value)
     {
         buffer.Append('"');
-        foreach (char c in value)
+        foreach (var c in value)
         {
             switch (c)
             {
@@ -77,71 +76,77 @@ public class JsonCanonicalizer
                 default:
                     if (c < ' ')
                     {
-                        buffer.Append("\\u").Append(((int)c).ToString("x04"));
+                        buffer.Append("\\u").Append(((int) c).ToString("x04"));
                     }
                     else
                     {
                         buffer.Append(c);
                     }
+
                     break;
             }
         }
+
         buffer.Append('"');
     }
 
     void Serialize(object? o)
     {
-        if (o is SortedDictionary<string, object>)
+        if (o is SortedDictionary<string, object> objects)
         {
             buffer.Append('{');
-            bool next = false;
-            foreach (var keyValuePair in (SortedDictionary<string, object?>)o)
+            var next = false;
+            foreach (var keyValuePair in objects)
             {
                 if (next)
                 {
                     buffer.Append(',');
                 }
+
                 next = true;
                 SerializeString(keyValuePair.Key);
                 buffer.Append(':');
                 Serialize(keyValuePair.Value);
             }
+
             buffer.Append('}');
         }
         else if (o is List<object>)
         {
             buffer.Append('[');
-            bool next = false;
-            foreach (object? value in (List<object?>)o)
+            var next = false;
+            foreach (var value in (List<object?>) o)
             {
                 if (next)
                 {
                     buffer.Append(',');
                 }
+
                 next = true;
                 Serialize(value);
             }
+
             buffer.Append(']');
         }
         else if (o == null)
         {
             buffer.Append("null");
         }
-        else if (o is String)
+        else if (o is string s)
         {
-            SerializeString((string)o);
+            SerializeString(s);
         }
-        else if (o is Boolean)
+        else if (o is bool)
         {
-            buffer.Append(o.ToString().ToLowerInvariant());
+            buffer.Append(o.ToString()?.ToLowerInvariant());
         }
-        else if (o is Double)
+        else if (o is double)
         {
-            buffer.Append(NumberToJson.SerializeNumber((Double)o));
+            buffer.Append(NumberToJson.SerializeNumber((double) o));
         }
         else
         {
-            throw new InvalidOperationException("Unknown object: " + o);
+            throw new InvalidOperationException($"Unknown object: {o}");
         }
     }
 
@@ -150,7 +155,7 @@ public class JsonCanonicalizer
         return buffer.ToString();
     }
 
-    public byte[] GetEncodedUTF8()
+    public IEnumerable<byte> GetEncodedUTF8()
     {
         return new UTF8Encoding(false, true).GetBytes(GetEncodedString());
     }
