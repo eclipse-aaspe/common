@@ -64,7 +64,7 @@ internal class JsonDecoder
         };
     }
 
-    private object? ParseObject()
+    private object ParseObject()
     {
         var dict =
             new SortedDictionary<string, object?>(StringComparer.Ordinal);
@@ -87,7 +87,7 @@ internal class JsonDecoder
         return dict;
     }
 
-    private object? ParseArray()
+    private object ParseArray()
     {
         var list = new List<object>();
         var next = false;
@@ -102,7 +102,11 @@ internal class JsonDecoder
                 next = true;
             }
 
-            list.Add(ParseElement());
+            var element = ParseElement();
+            if (element != null)
+            {
+                list.Add(element);
+            }
         }
 
         _jsonScanner.Scan();
@@ -149,7 +153,7 @@ internal class JsonDecoder
         throw new IOException($"Unrecognized or malformed JSON token: {token}");
     }
 
-    private string? ParseQuotedString()
+    private string ParseQuotedString()
     {
         var result = new StringBuilder();
         while (true)

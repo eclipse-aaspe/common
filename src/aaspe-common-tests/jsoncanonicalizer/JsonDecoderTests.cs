@@ -135,10 +135,10 @@ public class JsonDecoderTests
         // Assert
         decoder.Root.Should().BeOfType<List<object>>();
         var list = (List<object>) decoder.Root;
+        list.Count.Should().Be(3);
         list[0].Should().Be(123.0);
         list[1].Should().Be(true);
-        list[2].Should().BeNull();
-        list[3].Should().Be("value");
+        list[2].Should().Be("value");
     }
 
     [Fact]
@@ -167,12 +167,12 @@ public class JsonDecoderTests
         var result = (List<object>) decoder.Root;
 
         // Assert
+        result.Count.Should().Be(5);
         result[0].Should().BeOfType<SortedDictionary<string, object>>();
         result[1].Should().BeOfType<List<object>>();
         result[2].Should().Be("string");
         result[3].Should().Be(true);
         result[4].Should().Be(false);
-        result[5].Should().BeNull();
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class JsonDecoderTests
         var result = (List<object>) decoder.Root;
 
         // Assert
-        result[0].Should().BeNull();
+        result.Count.Should().Be(0);
     }
 
     [Fact]

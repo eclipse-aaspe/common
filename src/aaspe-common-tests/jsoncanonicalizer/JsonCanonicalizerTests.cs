@@ -78,8 +78,8 @@ public class JsonCanonicalizerTests
     }
 
     [Theory]
-    [InlineData("[true, false, null, \"string\", 123, 123.45]", "[true,false,null,\"string\",123,123.45]")]
-    [InlineData("[\"\\u0041\"]", "[\"A\"]")] // Testing Unicode escape handling
+    [InlineData("[true, false, null, \"string\", 123, 123.45]", "[true,false,\"string\",123,123.45]")]
+    [InlineData("[\"\\u0041\"]", "[\"A\"]")]
     public void GetEncodedString_ShouldHandleJsonArrays(string input, string expected)
     {
         // Arrange & Act
