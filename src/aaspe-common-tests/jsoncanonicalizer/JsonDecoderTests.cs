@@ -63,6 +63,85 @@ public class JsonDecoderTests
     }
 
     [Fact]
+    public void Constructor_WithJsonContainingAllTypes_ShouldInitializeCorrectly()
+    {
+        // Arrange
+        const string jsonData = "{\"number\":123.45,\"boolean\":true,\"nullValue\":null,\"string\":\"value\"}";
+
+        // Act
+        var decoder = new JsonDecoder(jsonData);
+
+        // Assert
+        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder.Root;
+        dict["number"].Should().Be(123.45);
+        dict["boolean"].Should().Be(true);
+        dict["nullValue"].Should().BeNull();
+        dict["string"].Should().Be("value");
+    }
+
+    [Fact]
+    public void Constructor_WithNestedJsonObjectsAndArrays_ShouldInitializeCorrectly()
+    {
+        // Arrange
+        const string jsonData = "{\"nestedArray\":[{\"innerKey\":\"innerValue\"}],\"nestedObject\":{\"key\":\"value\"}}";
+
+        // Act
+        var decoder = new JsonDecoder(jsonData);
+
+        // Assert
+        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder.Root;
+
+        // Verify nested array
+        dict["nestedArray"].Should().BeOfType<List<object>>();
+        var nestedArray = (List<object>) dict["nestedArray"];
+        nestedArray[0].Should().BeOfType<SortedDictionary<string, object>>();
+        var innerDict = (SortedDictionary<string, object>) nestedArray[0];
+        innerDict["innerKey"].Should().Be("innerValue");
+
+        // Verify nested object
+        dict["nestedObject"].Should().BeOfType<SortedDictionary<string, object>>();
+        var nestedObject = (SortedDictionary<string, object>) dict["nestedObject"];
+        nestedObject["key"].Should().Be("value");
+    }
+
+
+    [Fact]
+    public void Constructor_WithJsonContainingExtraWhiteSpace_ShouldInitializeCorrectly()
+    {
+        // Arrange
+        const string jsonData = "   { \"key\" : \"value\" }   ";
+
+        // Act
+        var decoder = new JsonDecoder(jsonData);
+
+        // Assert
+        decoder.Root.Should().BeOfType<SortedDictionary<string, object>>();
+        var dict = (SortedDictionary<string, object>) decoder.Root;
+        dict.Should().ContainKey("key");
+        dict["key"].Should().Be("value");
+    }
+
+    [Fact]
+    public void Constructor_WithJsonArrayContainingMixedTypes_ShouldInitializeCorrectly()
+    {
+        // Arrange
+        const string jsonData = "[123, true, null, \"value\"]";
+
+        // Act
+        var decoder = new JsonDecoder(jsonData);
+
+        // Assert
+        decoder.Root.Should().BeOfType<List<object>>();
+        var list = (List<object>) decoder.Root;
+        list[0].Should().Be(123.0);
+        list[1].Should().Be(true);
+        list[2].Should().BeNull();
+        list[3].Should().Be("value");
+    }
+
+    [Fact]
     public void ParseQuotedString_WithValidEscapes_ShouldReturnCorrectString()
     {
         // Arrange
@@ -187,7 +266,7 @@ public class JsonDecoderTests
     public void ParseQuotedString_WithUnterminatedString_ShouldThrowIOException()
     {
         // Arrange
-        const string jsonData = "{\"key\":\"value";
+        const string jsonData = "{\"key\":\"value"; // Unterminated string
 
         // Act
         Action act = () => new JsonDecoder(jsonData);
@@ -223,5 +302,95 @@ public class JsonDecoderTests
         var dict = (SortedDictionary<string, object>) decoder.Root;
         dict.Should().ContainKey("key");
         dict["key"].Should().Be("value");
+    }
+
+    [Fact]
+    public void ParseObject_WithMultipleKeyValuePairs_ShouldReturnCorrectDictionary()
+    {
+        // Arrange
+        const string jsonData = "{\"key1\":\"value1\",\"key2\":42,\"key3\":true,\"key4\":null}";
+        var decoder = new JsonDecoder(jsonData);
+
+        // Act
+        var result = (SortedDictionary<string, object>) decoder.Root;
+
+        // Assert
+        result["key1"].Should().Be("value1");
+        result["key2"].Should().Be(42.0);
+        result["key3"].Should().Be(true);
+        result["key4"].Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseQuotedString_WithUnicodeEscapeSequence_ShouldReturnCorrectString()
+    {
+        // Arrange
+        const string jsonData = "{\"key\":\"\\u0041\\u0042\\u0043\"}";
+        var decoder = new JsonDecoder(jsonData);
+
+        // Act
+        var result = (SortedDictionary<string, object>) decoder.Root;
+        var value = (string) result["key"];
+
+        // Assert
+        value.Should().Be("ABC");
+    }
+
+    [Fact]
+    public void GetHexChar_WithInvalidHexCharacter_ShouldThrowIOException()
+    {
+        // Arrange
+        const string jsonData = "{\"key\":\"\\u004X\"}"; // Invalid hex character 'X'
+
+        // Act
+        Action act = () => new JsonDecoder(jsonData);
+
+        // Assert
+        act.Should().Throw<IOException>().WithMessage("Bad hex in \\u escape: X");
+    }
+
+    [Fact]
+    public void ParseQuotedString_WithValidHexSequence_ShouldReturnCorrectString()
+    {
+        // Arrange
+        const string jsonData = "{\"key\":\"\\u0068\\u0065\\u006C\\u006C\\u006F\"}"; // "hello" in hex
+
+        // Act
+        var decoder = new JsonDecoder(jsonData);
+        var result = (SortedDictionary<string, object>) decoder.Root;
+        var value = (string) result["key"];
+
+        // Assert
+        value.Should().Be("hello");
+    }
+
+    [Fact]
+    public void GetHexChar_WithValidLowerCaseHexDigits_ShouldReturnCorrectChars()
+    {
+        // Arrange
+        const string jsonData = "{\"key\":\"\\u0061\\u0062\\u0063\"}"; // "abc"
+        var decoder = new JsonDecoder(jsonData);
+
+        // Act
+        var result = (SortedDictionary<string, object>) decoder.Root;
+        var value = (string) result["key"];
+
+        // Assert
+        value.Should().Be("abc");
+    }
+
+    [Fact]
+    public void GetHexChar_WithMixedCaseHexDigits_ShouldReturnCorrectChars()
+    {
+        // Arrange
+        const string jsonData = "{\"key\":\"\\u0041\\u0062\\u0043\\u0064\"}"; // "AbCd"
+        var decoder = new JsonDecoder(jsonData);
+
+        // Act
+        var result = (SortedDictionary<string, object>) decoder.Root;
+        var value = (string) result["key"];
+
+        // Assert
+        value.Should().Be("AbCd");
     }
 }

@@ -1,6 +1,4 @@
 ﻿using System.Text;
-using AutoFixture;
-using AutoFixture.AutoMoq;
 using FluentAssertions;
 using Org.Webpki.JsonCanonicalizer;
 
@@ -8,13 +6,6 @@ namespace aaspe_common_tests.jsoncanonicalizer;
 
 public class JsonCanonicalizerTests
 {
-    private readonly IFixture _fixture;
-
-    public JsonCanonicalizerTests()
-    {
-        _fixture = new Fixture().Customize(new AutoMoqCustomization());
-    }
-
     [Fact]
     public void Constructor_WithJsonString_ShouldInitializeBuffer()
     {
@@ -99,52 +90,53 @@ public class JsonCanonicalizerTests
         result.Should().Be(expected);
     }
 
-    [Fact]
-    public void Serialize_ShouldThrowInvalidOperationException_ForUnknownObject()
+    [Theory]
+    [InlineData("simple", "\"simple\"")]
+    [InlineData("with \"quotes\"", "\"with \\\"quotes\\\"\"")]
+    [InlineData("backslash\\", "\"backslash\\\\\"")]
+    [InlineData("newline\n", "\"newline\\n\"")]
+    [InlineData("backspace\b", "\"backspace\\b\"")]
+    [InlineData("formfeed\f", "\"formfeed\\f\"")]
+    [InlineData("carriage\r", "\"carriage\\r\"")]
+    [InlineData("tab\t", "\"tab\\t\"")]
+    [InlineData("\u0019", "\"\\u0019\"")] // Control character
+    public void SerializeString_ShouldHandleAllCases(string input, string expected)
     {
         // Arrange
-        var unknownObject = new { };
+        var canonicalizer = new JsonCanonicalizer("{}");
 
         // Act
-        //Action act = () => new JsonCanonicalizer("{\"key\":\"value\"}").Serialize(unknownObject);
+        var bufferField = typeof(JsonCanonicalizer).GetField("buffer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+        var serializeStringMethod = typeof(JsonCanonicalizer).GetMethod("SerializeString", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        serializeStringMethod.Invoke(canonicalizer, new object[] {input});
+        var result = bufferField.GetValue(canonicalizer).ToString();
 
         // Assert
-        //act.Should().Throw<InvalidOperationException>().WithMessage("Unknown object: *");
+        result.Should().Be(expected);
     }
 
     [Theory]
-    [InlineData("\n", "\\n")]
-    [InlineData("\b", "\\b")]
-    [InlineData("\f", "\\f")]
-    [InlineData("\r", "\\r")]
-    [InlineData("\t", "\\t")]
-    [InlineData("\"", "\\\"")]
-    [InlineData("\\", @"\\")]
-    public void SerializeString_ShouldEscapeSpecialCharacters(string input, string expected)
+    [InlineData('n', "\\n")]
+    [InlineData('b', "\\b")]
+    [InlineData('f', "\\f")]
+    [InlineData('r', "\\r")]
+    [InlineData('t', "\\t")]
+    [InlineData('"', "\\\"")]
+    [InlineData('\\', "\\\\")]
+    public void Escape_ShouldAppendEscapedCharacter(char input, string expected)
     {
         // Arrange
         var canonicalizer = new JsonCanonicalizer("{}");
 
         // Act
-        //canonicalizer.SerializeString(input);
-        var result = canonicalizer.GetEncodedString();
+        var bufferField = typeof(JsonCanonicalizer).GetField("buffer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+        var escapeMethod = typeof(JsonCanonicalizer).GetMethod("Escape", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        escapeMethod.Invoke(canonicalizer, new object[] {input});
+        var result = bufferField.GetValue(canonicalizer).ToString();
 
         // Assert
-        result.Should().Contain(expected);
-    }
-
-    [Fact]
-    public void SerializeString_ShouldHandleControlCharacters()
-    {
-        // Arrange
-        var input = new string(new[] {(char) 0x1F}); // control character
-        var canonicalizer = new JsonCanonicalizer("{}");
-
-        // Act
-        //canonicalizer.SerializeString(input);
-        var result = canonicalizer.GetEncodedString();
-
-        // Assert
-        result.Should().Contain("\\u001f");
+        result.Should().Be(expected);
     }
 }
