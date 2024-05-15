@@ -14,7 +14,14 @@ internal class JsonDecoder
     private const char CommaCharacter = ',';
     private const char BackSlash = '\\';
 
-    private static readonly Regex NumberPattern = new("^-?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?$");
+    private const string Sign = "-?";
+    private const string IntegerPart = "[0-9]+";
+    private const string DecimalPoint = @"\.";
+    private const string DecimalPart = "[0-9]+";
+    private const string ExponentPart = "([eE][-+]?[0-9]+)?";
+    private const string NumberPatternString = $"^{Sign}{IntegerPart}({DecimalPoint}{DecimalPart})?{ExponentPart}?$";
+    private static readonly Regex NumberPattern = new(NumberPatternString);
+
     private static readonly Regex BooleanPattern = new("^true|false$");
 
     private int _index;
