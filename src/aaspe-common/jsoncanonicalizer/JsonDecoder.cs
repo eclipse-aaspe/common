@@ -33,20 +33,20 @@ internal class JsonDecoder
     {
         _jsonData = jsonData;
         _jsonScanner = new JsonScanner(_jsonData);
-        if (_jsonScanner.PeekNextNonWhiteSpaceChar() == LeftBracket)
+        if (_jsonScanner.PeekNextNonWhiteSpaceCharacter() == LeftBracket)
         {
             _jsonScanner.Scan();
             Root = ParseArray();
         }
         else
         {
-            _jsonScanner.ScanFor(LeftCurlyBracket);
+            _jsonScanner.ScanForNextCharacter(LeftCurlyBracket);
             Root = ParseObject();
         }
 
-        while (_jsonScanner.IsIndexInJsonLength())
+        while (_jsonScanner.IsIndexWithinJsonLength())
         {
-            if (!_jsonScanner.IsNextCharacterWhitespace())
+            if (!_jsonScanner.IsNextCharacterWhiteSpace())
             {
                 throw new IOException("Improperly terminated JSON object");
             }
@@ -69,17 +69,17 @@ internal class JsonDecoder
         var dict =
             new SortedDictionary<string, object?>(StringComparer.Ordinal);
         var next = false;
-        while (_jsonScanner.PeekNextNonWhiteSpaceChar() != RightCurlyBracket)
+        while (_jsonScanner.PeekNextNonWhiteSpaceCharacter() != RightCurlyBracket)
         {
             if (next)
             {
-                _jsonScanner.ScanFor(CommaCharacter);
+                _jsonScanner.ScanForNextCharacter(CommaCharacter);
             }
 
             next = true;
-            _jsonScanner.ScanFor(DoubleQuote);
+            _jsonScanner.ScanForNextCharacter(DoubleQuote);
             var name = ParseQuotedString();
-            _jsonScanner.ScanFor(ColonCharacter);
+            _jsonScanner.ScanForNextCharacter(ColonCharacter);
             dict.Add(name, ParseElement());
         }
 
@@ -91,11 +91,11 @@ internal class JsonDecoder
     {
         var list = new List<object>();
         var next = false;
-        while (_jsonScanner.PeekNextNonWhiteSpaceChar() != RightBracket)
+        while (_jsonScanner.PeekNextNonWhiteSpaceCharacter() != RightBracket)
         {
             if (next)
             {
-                _jsonScanner.ScanFor(CommaCharacter);
+                _jsonScanner.ScanForNextCharacter(CommaCharacter);
             }
             else
             {
@@ -111,12 +111,12 @@ internal class JsonDecoder
 
     private object? ParseSimpleType()
     {
-        _jsonScanner.RevertCurrentIndexByOne();
+        _jsonScanner.MoveBackToPreviousCharacter();
         var tempBuffer = new StringBuilder();
         char c;
-        while ((c = _jsonScanner.PeekNextNonWhiteSpaceChar()) != CommaCharacter && c != RightBracket && c != RightCurlyBracket)
+        while ((c = _jsonScanner.PeekNextNonWhiteSpaceCharacter()) != CommaCharacter && c != RightBracket && c != RightCurlyBracket)
         {
-            c = _jsonScanner.GetNextChar();
+            c = _jsonScanner.GetNextCharacter();
             if (char.IsWhiteSpace(c))
             {
                 break;
@@ -154,7 +154,7 @@ internal class JsonDecoder
         var result = new StringBuilder();
         while (true)
         {
-            var c = _jsonScanner.GetNextChar();
+            var c = _jsonScanner.GetNextCharacter();
             if (c < ' ')
             {
                 throw new IOException(c == '\n' ? "Unterminated string literal" : $"Unescaped control character: 0x{((int) c):x02}");
@@ -178,7 +178,7 @@ internal class JsonDecoder
 
     private char HandleEscapeSequence()
     {
-        var c = _jsonScanner.GetNextChar();
+        var c = _jsonScanner.GetNextCharacter();
         switch (c)
         {
             case '"':
@@ -217,7 +217,7 @@ internal class JsonDecoder
 
     private char GetHexChar()
     {
-        var c = _jsonScanner.GetNextChar();
+        var c = _jsonScanner.GetNextCharacter();
         return c switch
         {
             '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => (char) (c - '0'),

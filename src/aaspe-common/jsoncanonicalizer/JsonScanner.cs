@@ -1,66 +1,74 @@
-﻿internal class JsonScanner
+﻿namespace aaspe_common.jsoncanonicalizer
 {
-    private int _index;
-    private readonly string _jsonData;
-
-    public JsonScanner(string jsonData)
+    internal class JsonScanner
     {
-        _jsonData = jsonData;
-    }
+        private int _currentIndex;
+        private readonly string _jsonData;
 
-    public char PeekNextNonWhiteSpaceChar()
-    {
-        var save = _index;
-        var c = Scan();
-        _index = save;
-        return c;
-    }
-
-    public void ScanFor(char expected)
-    {
-        var c = Scan();
-        if (c != expected)
+        public JsonScanner(string jsonData)
         {
-            throw new IOException($"Expected '{expected}' but got '{c}'");
-        }
-    }
-
-    public char GetNextChar()
-    {
-        if (_index < _jsonData.Length)
-        {
-            return _jsonData[_index++];
+            _jsonData = jsonData ?? throw new ArgumentNullException(nameof(jsonData));
         }
 
-        throw new IOException("Unexpected EOF reached");
-    }
-
-    public char Scan()
-    {
-        char c;
-        while ((c = GetNextChar()) != '\0')
+        public char PeekNextNonWhiteSpaceCharacter()
         {
-            if (!char.IsWhiteSpace(c))
+            var savedIndex = _currentIndex;
+            var nextChar = Scan();
+            _currentIndex = savedIndex;
+            return nextChar;
+        }
+
+        public void ScanForNextCharacter(char expected)
+        {
+            var nextChar = Scan();
+            if (nextChar != expected)
             {
-                return c;
+                throw new IOException($"Expected '{expected}' but got '{nextChar}'");
             }
         }
 
-        throw new IOException("Unexpected EOF reached");
-    }
+        public char GetNextCharacter()
+        {
+            if (_currentIndex < _jsonData.Length)
+            {
+                return _jsonData[_currentIndex++];
+            }
 
-    public bool IsIndexInJsonLength()
-    {
-        return _index < _jsonData.Length;
-    }
+            throw new IOException("Unexpected EOF reached");
+        }
 
-    public bool IsNextCharacterWhitespace()
-    {
-        return char.IsWhiteSpace(_jsonData[_index++]);
-    }
+        public char Scan()
+        {
+            char nextChar;
+            while ((nextChar = GetNextCharacter()) != '\0')
+            {
+                if (!char.IsWhiteSpace(nextChar))
+                {
+                    return nextChar;
+                }
+            }
 
-    public void RevertCurrentIndexByOne()
-    {
-        _index--;
+            throw new IOException("Unexpected EOF reached");
+        }
+
+        public bool IsIndexWithinJsonLength()
+        {
+            return _currentIndex < _jsonData.Length;
+        }
+
+        public bool IsNextCharacterWhiteSpace()
+        {
+            return char.IsWhiteSpace(_jsonData[_currentIndex++]);
+        }
+
+        public void MoveBackToPreviousCharacter()
+        {
+            if (_currentIndex <= 0)
+            {
+                _currentIndex = 0;
+            }
+
+            _currentIndex--;
+        }
     }
 }
