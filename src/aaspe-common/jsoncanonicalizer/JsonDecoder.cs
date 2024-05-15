@@ -24,28 +24,29 @@ internal class JsonDecoder
 
     private static readonly Regex BooleanPattern = new("^true|false$");
 
-    private int _index;
     private readonly string _jsonData;
+    private JsonScanner _jsonScanner;
 
     internal readonly object? Root;
 
     public JsonDecoder(string jsonData)
     {
         _jsonData = jsonData;
-        if (TestNextNonWhiteSpaceChar() == LeftBracket)
+        _jsonScanner = new JsonScanner(_jsonData);
+        if (_jsonScanner.PeekNextNonWhiteSpaceChar() == LeftBracket)
         {
-            Scan();
+            _jsonScanner.Scan();
             Root = ParseArray();
         }
         else
         {
-            ScanFor(LeftCurlyBracket);
+            _jsonScanner.ScanFor(LeftCurlyBracket);
             Root = ParseObject();
         }
 
-        while (_index < jsonData.Length)
+        while (_jsonScanner.IsIndexInJsonLength())
         {
-            if (!IsWhiteSpace(jsonData[_index++]))
+            if (!_jsonScanner.IsNextCharacterWhitespace())
             {
                 throw new IOException("Improperly terminated JSON object");
             }
@@ -54,7 +55,7 @@ internal class JsonDecoder
 
     private object? ParseElement()
     {
-        return Scan() switch
+        return _jsonScanner.Scan() switch
         {
             LeftCurlyBracket => ParseObject(),
             DoubleQuote => ParseQuotedString(),
@@ -68,21 +69,21 @@ internal class JsonDecoder
         var dict =
             new SortedDictionary<string, object?>(StringComparer.Ordinal);
         var next = false;
-        while (TestNextNonWhiteSpaceChar() != RightCurlyBracket)
+        while (_jsonScanner.PeekNextNonWhiteSpaceChar() != RightCurlyBracket)
         {
             if (next)
             {
-                ScanFor(CommaCharacter);
+                _jsonScanner.ScanFor(CommaCharacter);
             }
 
             next = true;
-            ScanFor(DoubleQuote);
+            _jsonScanner.ScanFor(DoubleQuote);
             var name = ParseQuotedString();
-            ScanFor(ColonCharacter);
+            _jsonScanner.ScanFor(ColonCharacter);
             dict.Add(name, ParseElement());
         }
 
-        Scan();
+        _jsonScanner.Scan();
         return dict;
     }
 
@@ -90,11 +91,11 @@ internal class JsonDecoder
     {
         var list = new List<object>();
         var next = false;
-        while (TestNextNonWhiteSpaceChar() != RightBracket)
+        while (_jsonScanner.PeekNextNonWhiteSpaceChar() != RightBracket)
         {
             if (next)
             {
-                ScanFor(CommaCharacter);
+                _jsonScanner.ScanFor(CommaCharacter);
             }
             else
             {
@@ -104,19 +105,19 @@ internal class JsonDecoder
             list.Add(ParseElement());
         }
 
-        Scan();
+        _jsonScanner.Scan();
         return list;
     }
 
     private object? ParseSimpleType()
     {
-        _index--;
+        _jsonScanner.RevertCurrentIndexByOne();
         var tempBuffer = new StringBuilder();
         char c;
-        while ((c = TestNextNonWhiteSpaceChar()) != CommaCharacter && c != RightBracket && c != RightCurlyBracket)
+        while ((c = _jsonScanner.PeekNextNonWhiteSpaceChar()) != CommaCharacter && c != RightBracket && c != RightCurlyBracket)
         {
-            c = NextChar(_jsonData, ref _index);
-            if (IsWhiteSpace(c))
+            c = _jsonScanner.GetNextChar();
+            if (char.IsWhiteSpace(c))
             {
                 break;
             }
@@ -153,7 +154,7 @@ internal class JsonDecoder
         var result = new StringBuilder();
         while (true)
         {
-            var c = NextChar(_jsonData, ref _index);
+            var c = _jsonScanner.GetNextChar();
             if (c < ' ')
             {
                 throw new IOException(c == '\n' ? "Unterminated string literal" : $"Unescaped control character: 0x{((int) c):x02}");
@@ -177,7 +178,7 @@ internal class JsonDecoder
 
     private char HandleEscapeSequence()
     {
-        var c = NextChar(_jsonData, ref _index);
+        var c = _jsonScanner.GetNextChar();
         switch (c)
         {
             case '"':
@@ -216,7 +217,7 @@ internal class JsonDecoder
 
     private char GetHexChar()
     {
-        var c = NextChar(_jsonData, ref _index);
+        var c = _jsonScanner.GetNextChar();
         return c switch
         {
             '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => (char) (c - '0'),
@@ -224,52 +225,5 @@ internal class JsonDecoder
             'A' or 'B' or 'C' or 'D' or 'E' or 'F' => (char) (c - 'A' + 10),
             _ => throw new IOException($"Bad hex in \\u escape: {c}")
         };
-    }
-
-    private char TestNextNonWhiteSpaceChar()
-    {
-        var save = _index;
-        var c = Scan();
-        _index = save;
-        return c;
-    }
-
-    private void ScanFor(char expected)
-    {
-        var c = Scan();
-        if (c != expected)
-        {
-            throw new IOException($"Expected '{expected}' but got '{c}'");
-        }
-    }
-
-    private static char NextChar(string jsonData, ref int index)
-    {
-        if (index < jsonData.Length)
-        {
-            return jsonData[index++];
-        }
-
-        throw new IOException("Unexpected EOF reached");
-    }
-
-
-    private static bool IsWhiteSpace(char c)
-    {
-        return c == 0x20 || c == 0x0A || c == 0x0D || c == 0x09;
-    }
-
-    private char Scan()
-    {
-        char c;
-        while ((c = NextChar(_jsonData, ref _index)) != '\0')
-        {
-            if (!IsWhiteSpace(c))
-            {
-                return c;
-            }
-        }
-
-        throw new IOException("Unexpected EOF reached");
     }
 }
