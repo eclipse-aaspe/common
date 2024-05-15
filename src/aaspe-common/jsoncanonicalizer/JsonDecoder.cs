@@ -24,15 +24,13 @@ internal class JsonDecoder
 
     private static readonly Regex BooleanPattern = new("^true|false$");
 
-    private readonly string _jsonData;
-    private JsonScanner _jsonScanner;
+    private readonly IJsonScanner _jsonScanner;
 
     internal readonly object? Root;
 
     public JsonDecoder(string jsonData)
     {
-        _jsonData = jsonData;
-        _jsonScanner = new JsonScanner(_jsonData);
+        _jsonScanner = new JsonScanner(jsonData);
         if (_jsonScanner.PeekNextNonWhiteSpaceCharacter() == LeftBracket)
         {
             _jsonScanner.Scan();
@@ -50,6 +48,8 @@ internal class JsonDecoder
             {
                 throw new IOException("Improperly terminated JSON object");
             }
+
+            _jsonScanner.MoveToNextCharacter();
         }
     }
 
