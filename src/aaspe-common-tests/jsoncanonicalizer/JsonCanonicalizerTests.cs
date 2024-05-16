@@ -106,10 +106,14 @@ public class JsonCanonicalizerTests
         // Arrange
         var canonicalizer = new JsonCanonicalizer("{}");
 
-        // Act
-        var bufferField = typeof(JsonCanonicalizer).GetField("buffer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
         bufferField.SetValue(canonicalizer, new StringBuilder());
-        var serializeStringMethod = typeof(JsonCanonicalizer).GetMethod("SerializeString", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        // Access the private SerializeString method
+        var serializeStringMethod = typeof(JsonCanonicalizer).GetMethod("SerializeString", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
         serializeStringMethod.Invoke(canonicalizer, new object[] {input});
         var result = bufferField.GetValue(canonicalizer).ToString();
 
@@ -132,14 +136,161 @@ public class JsonCanonicalizerTests
 
         // Create a new StringBuilder instance to pass to the method
         var result = new StringBuilder();
-        
+
         // Get the EscapeCharacter method using reflection
         var escapeMethod = typeof(JsonCanonicalizer).GetMethod("EscapeCharacter", BindingFlags.NonPublic | BindingFlags.Instance);
-        
+
         // Act
-        escapeMethod.Invoke(canonicalizer, new object[] { result, input });
-        
+        escapeMethod.Invoke(canonicalizer, new object[] {result, input});
+
         // Assert
         result.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void Serialize_WithNull_ShouldAppendNull()
+    {
+        // Arrange
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        serializeMethod.Invoke(canonicalizer, new object[] {null});
+        var result = bufferField.GetValue(canonicalizer).ToString();
+
+        // Assert
+        result.Should().Be("null");
+    }
+
+    [Fact]
+    public void Serialize_WithSortedDictionary_ShouldSerializeObject()
+    {
+        // Arrange
+        var sortedDict = new SortedDictionary<string, object> {{"b", "2"}, {"a", "1"}};
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        serializeMethod.Invoke(canonicalizer, new object[] {sortedDict});
+        var result = bufferField.GetValue(canonicalizer).ToString();
+
+        // Assert
+        result.Should().Be("{\"a\":\"1\",\"b\":\"2\"}");
+    }
+
+    [Fact]
+    public void Serialize_WithList_ShouldSerializeArray()
+    {
+        // Arrange
+        var list = new List<object?> {"1", "string", true};
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        serializeMethod.Invoke(canonicalizer, new object[] {list});
+        var result = bufferField.GetValue(canonicalizer).ToString();
+
+        // Assert
+        result.Should().Be("[\"1\",\"string\",true]");
+    }
+
+    [Fact]
+    public void Serialize_WithString_ShouldSerializeString()
+    {
+        // Arrange
+        var input = "string";
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        serializeMethod.Invoke(canonicalizer, new object[] {input});
+        var result = bufferField.GetValue(canonicalizer).ToString();
+
+        // Assert
+        result.Should().Be("\"string\"");
+    }
+
+    [Fact]
+    public void Serialize_WithBool_ShouldSerializeBoolean()
+    {
+        // Arrange
+        var input = true;
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        serializeMethod.Invoke(canonicalizer, new object[] {input});
+        var result = bufferField.GetValue(canonicalizer).ToString();
+
+        // Assert
+        result.Should().Be("true");
+    }
+
+    [Fact]
+    public void Serialize_WithDouble_ShouldSerializeNumber()
+    {
+        // Arrange
+        var input = 123.45;
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access private _buffer field and set it to a new StringBuilder instance
+        var bufferField = typeof(JsonCanonicalizer).GetField("_buffer", BindingFlags.NonPublic | BindingFlags.Instance);
+        bufferField.SetValue(canonicalizer, new StringBuilder());
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        serializeMethod.Invoke(canonicalizer, new object[] {input});
+        var result = bufferField.GetValue(canonicalizer).ToString();
+
+        // Assert
+        result.Should().Be("123.45");
+    }
+
+    [Fact]
+    public void Serialize_WithUnknownType_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var input = new DateTime(2024, 1, 1);
+        var canonicalizer = new JsonCanonicalizer("{}");
+
+        // Access the private Serialize method
+        var serializeMethod = typeof(JsonCanonicalizer).GetMethod("Serialize", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act & Assert
+        Action act = () => serializeMethod.Invoke(canonicalizer, new object[] {input});
+        act.Should().Throw<TargetInvocationException>().WithInnerException<InvalidOperationException>()
+            .WithMessage($"Unknown object type: {input.GetType()}");
     }
 }

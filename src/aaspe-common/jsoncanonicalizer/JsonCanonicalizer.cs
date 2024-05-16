@@ -23,11 +23,35 @@ namespace Org.Webpki.JsonCanonicalizer;
 
 public class JsonCanonicalizer
 {
-    StringBuilder buffer;
+    private const string NullValue = "null";
+    private const char ObjectStart = '{';
+    private const char ObjectEnd = '}';
+    private const char ArrayStart = '[';
+    private const char ArrayEnd = ']';
+    private const char Comma = ',';
+    private const char Colon = ':';
+    private const char Quote = '"';
+    private const string UnicodeFormat = "x04";
+    private const string UnicodePrefix = "\\u";
+
+    private readonly StringBuilder _buffer;
+    private Dictionary<Type, Action<object>> _serializationActions;
+
+    private static readonly Dictionary<char, string> EscapeSequences = new()
+    {
+        { '\n', "\\n" },
+        { '\b', "\\b" },
+        { '\f', "\\f" },
+        { '\r', "\\r" },
+        { '\t', "\\t" },
+        { '"', "\\\"" },
+        { '\\', "\\\\" }
+    };
 
     public JsonCanonicalizer(string jsonData)
     {
-        buffer = new StringBuilder();
+        _buffer = new StringBuilder();
+        InitializeSerializationActions();
         Serialize(new JsonDecoder().Decode(jsonData));
     }
 
@@ -36,115 +60,102 @@ public class JsonCanonicalizer
     {
     }
 
+    public string GetEncodedString()
+    {
+        return _buffer.ToString();
+    }
+
+    public IEnumerable<byte> GetEncodedUTF8()
+    {
+        return new UTF8Encoding(false, true).GetBytes(GetEncodedString());
+    }
+
+    private void InitializeSerializationActions()
+    {
+        _serializationActions = new Dictionary<Type, Action<object>>
+        {
+            { typeof(SortedDictionary<string, object>), o => SerializeObject((SortedDictionary<string, object>)o) },
+            { typeof(List<object>), o => SerializeArray((List<object?>)o) },
+            { typeof(string), o => SerializeString((string)o) },
+            { typeof(bool), o => _buffer.Append(o.ToString()?.ToLowerInvariant()) },
+            { typeof(double), o => _buffer.Append(NumberToJson.SerializeNumber((double)o)) }
+        };
+    }
+
+    private void Serialize(object? o)
+    {
+        if (o == null)
+        {
+            _buffer.Append(NullValue);
+            return;
+        }
+
+        var objectType = o.GetType();
+        if (_serializationActions.ContainsKey(objectType))
+        {
+            _serializationActions[objectType](o);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unknown object type: {objectType}");
+        }
+    }
+
+    private void SerializeObject(SortedDictionary<string, object> objects)
+    {
+        _buffer.Append(ObjectStart);
+        var next = false;
+        foreach (var keyValuePair in objects)
+        {
+            if (next) _buffer.Append(Comma);
+            next = true;
+            SerializeString(keyValuePair.Key);
+            _buffer.Append(Colon);
+            Serialize(keyValuePair.Value);
+        }
+        _buffer.Append(ObjectEnd);
+    }
+
+    private void SerializeArray(List<object?> array)
+    {
+        _buffer.Append(ArrayStart);
+        var next = false;
+        foreach (var item in array)
+        {
+            if (next) _buffer.Append(Comma);
+            next = true;
+            Serialize(item);
+        }
+        _buffer.Append(ArrayEnd);
+    }
+
     private void SerializeString(string value)
     {
         var result = new StringBuilder();
-        result.Append('"');
+        result.Append(Quote);
 
         foreach (var c in value)
         {
             EscapeCharacter(result, c);
         }
 
-        result.Append('"');
-        buffer.Append(result);
+        result.Append(Quote);
+        _buffer.Append(result);
     }
 
     private void EscapeCharacter(StringBuilder result, char c)
     {
-        var escapeSequences = new Dictionary<char, string>
-        {
-            { '\n', "\\n" },
-            { '\b', "\\b" },
-            { '\f', "\\f" },
-            { '\r', "\\r" },
-            { '\t', "\\t" },
-            { '"', "\\\"" },
-            { '\\', "\\\\" }
-        };
-
-        if (escapeSequences.TryGetValue(c, out var escapeSequence))
+        if (EscapeSequences.TryGetValue(c, out var escapeSequence))
         {
             result.Append(escapeSequence);
         }
         else if (c < ' ')
         {
-            result.Append("\\u").Append(((int)c).ToString("x04"));
+            result.Append(UnicodePrefix).Append(((int)c).ToString(UnicodeFormat));
         }
         else
         {
             result.Append(c);
         }
-    }
-
-
-    void Serialize(object? o)
-    {
-        if (o is SortedDictionary<string, object> objects)
-        {
-            buffer.Append('{');
-            var next = false;
-            foreach (var keyValuePair in objects)
-            {
-                if (next)
-                {
-                    buffer.Append(',');
-                }
-
-                next = true;
-                SerializeString(keyValuePair.Key);
-                buffer.Append(':');
-                Serialize(keyValuePair.Value);
-            }
-
-            buffer.Append('}');
-        }
-        else if (o is List<object>)
-        {
-            buffer.Append('[');
-            var next = false;
-            foreach (var value in (List<object?>) o)
-            {
-                if (next)
-                {
-                    buffer.Append(',');
-                }
-
-                next = true;
-                Serialize(value);
-            }
-
-            buffer.Append(']');
-        }
-        else if (o == null)
-        {
-            buffer.Append("null");
-        }
-        else if (o is string s)
-        {
-            SerializeString(s);
-        }
-        else if (o is bool)
-        {
-            buffer.Append(o.ToString()?.ToLowerInvariant());
-        }
-        else if (o is double)
-        {
-            buffer.Append(NumberToJson.SerializeNumber((double) o));
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown object: {o}");
-        }
-    }
-
-    public string GetEncodedString()
-    {
-        return buffer.ToString();
-    }
-
-    public IEnumerable<byte> GetEncodedUTF8()
-    {
-        return new UTF8Encoding(false, true).GetBytes(GetEncodedString());
     }
 }

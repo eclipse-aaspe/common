@@ -6,6 +6,10 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aaspe-common", "aaspe-common\aaspe-common.csproj", "{BDD0CCEA-01D5-434E-B186-7CE8A87CB997}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C9F51CE2-7CA8-4884-B6C4-1CBE46F53A31}"
+	ProjectSection(SolutionItems) = preProject
+		..\CHANGELOG.md = ..\CHANGELOG.md
+		..\README.md = ..\README.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aaspe-aascore", "aaspe-aascore\aaspe-aascore.csproj", "{C1488B00-B03B-4BC1-B225-0DAF8CD51EA7}"
 EndProject
