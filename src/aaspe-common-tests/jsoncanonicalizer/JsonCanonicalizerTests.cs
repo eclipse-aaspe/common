@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
 using FluentAssertions;
 using Org.Webpki.JsonCanonicalizer;
 
@@ -117,11 +118,11 @@ public class JsonCanonicalizerTests
     }
 
     [Theory]
-    [InlineData('n', "\\n")]
-    [InlineData('b', "\\b")]
-    [InlineData('f', "\\f")]
-    [InlineData('r', "\\r")]
-    [InlineData('t', "\\t")]
+    [InlineData('\n', "\\n")]
+    [InlineData('\b', "\\b")]
+    [InlineData('\f', "\\f")]
+    [InlineData('\r', "\\r")]
+    [InlineData('\t', "\\t")]
     [InlineData('"', "\\\"")]
     [InlineData('\\', "\\\\")]
     public void Escape_ShouldAppendEscapedCharacter(char input, string expected)
@@ -129,14 +130,16 @@ public class JsonCanonicalizerTests
         // Arrange
         var canonicalizer = new JsonCanonicalizer("{}");
 
+        // Create a new StringBuilder instance to pass to the method
+        var result = new StringBuilder();
+        
+        // Get the EscapeCharacter method using reflection
+        var escapeMethod = typeof(JsonCanonicalizer).GetMethod("EscapeCharacter", BindingFlags.NonPublic | BindingFlags.Instance);
+        
         // Act
-        var bufferField = typeof(JsonCanonicalizer).GetField("buffer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        bufferField.SetValue(canonicalizer, new StringBuilder());
-        var escapeMethod = typeof(JsonCanonicalizer).GetMethod("Escape", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        escapeMethod.Invoke(canonicalizer, new object[] {input});
-        var result = bufferField.GetValue(canonicalizer).ToString();
-
+        escapeMethod.Invoke(canonicalizer, new object[] { result, input });
+        
         // Assert
-        result.Should().Be(expected);
+        result.ToString().Should().Be(expected);
     }
 }

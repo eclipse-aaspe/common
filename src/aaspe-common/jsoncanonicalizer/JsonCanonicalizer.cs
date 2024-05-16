@@ -52,46 +52,31 @@ public class JsonCanonicalizer
 
     private void EscapeCharacter(StringBuilder result, char c)
     {
-        switch (c)
+        var escapeSequences = new Dictionary<char, string>
         {
-            case '\n':
-                result.Append("\\n");
-                break;
+            { '\n', "\\n" },
+            { '\b', "\\b" },
+            { '\f', "\\f" },
+            { '\r', "\\r" },
+            { '\t', "\\t" },
+            { '"', "\\\"" },
+            { '\\', "\\\\" }
+        };
 
-            case '\b':
-                result.Append("\\b");
-                break;
-
-            case '\f':
-                result.Append("\\f");
-                break;
-
-            case '\r':
-                result.Append("\\r");
-                break;
-
-            case '\t':
-                result.Append("\\t");
-                break;
-
-            case '"':
-            case '\\':
-                result.Append('\\').Append(c);
-                break;
-
-            default:
-                if (c < ' ')
-                {
-                    result.Append("\\u").Append(((int) c).ToString("x04"));
-                }
-                else
-                {
-                    result.Append(c);
-                }
-
-                break;
+        if (escapeSequences.TryGetValue(c, out var escapeSequence))
+        {
+            result.Append(escapeSequence);
+        }
+        else if (c < ' ')
+        {
+            result.Append("\\u").Append(((int)c).ToString("x04"));
+        }
+        else
+        {
+            result.Append(c);
         }
     }
+
 
     void Serialize(object? o)
     {
