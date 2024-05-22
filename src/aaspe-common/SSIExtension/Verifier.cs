@@ -5,7 +5,7 @@ Author: Michael Hoffmeister
 Copyright (c) 2021 Phoenix Contact GmbH & Co. KG <opensource@phoenixcontact.com>
 Author: Andreas Orzelski
 
-Copyright (c) 2021 Fraunhofer IOSB-INA Lemgo, 
+Copyright (c) 2021 Fraunhofer IOSB-INA Lemgo,
     eine rechtlich nicht selbständige Einrichtung der Fraunhofer-Gesellschaft
     zur Förderung der angewandten Forschung e.V.
 
@@ -22,11 +22,9 @@ using System.Text.Json;
 using System.Threading;
 using static System.Text.Json.JsonElement;
 
-// ReSharper disable All .. as this is test code
 
 namespace SSIExtension
 {
-
     public class Verifier
     {
         public string APIEndpoint { get; }
@@ -50,62 +48,62 @@ namespace SSIExtension
 
             //receive invitation
             var clientInvitee = new HttpClient();
-            string resultInvitee = clientInvitee.PostAsync(APIEndpoint +
-                $"/connections/receive-invitation?auto_accept=true&alias=Prover",
+            var resultInvitee = clientInvitee.PostAsync(APIEndpoint +
+                                                        $"/connections/receive-invitation?auto_accept=true&alias=Prover",
                 new StringContent(invitation)).Result.Content.ReadAsStringAsync().Result;
-            var prover_connection_id = JsonDocument.Parse(resultInvitee).
-                RootElement.GetProperty("connection_id").GetString();
+            var prover_connection_id = JsonDocument.Parse(resultInvitee).RootElement.GetProperty("connection_id").GetString();
 
             //trust ping for completion
             var clientTrustPing = new HttpClient();
-            string resultTrustPing = clientTrustPing.PostAsync(APIEndpoint +
-                $"/connections/{prover_connection_id}/send-ping",
+            _ = clientTrustPing.PostAsync(APIEndpoint +
+                                          $"/connections/{prover_connection_id}/send-ping",
                 new StringContent("{}")).Result.Content.ReadAsStringAsync().Result;
             Console.WriteLine($"Invitation accepted, Provers Connection ID is '{resultInvitee}'");
             //wait a little bit so that the connection is ready
             Thread.Sleep(1000);
 
             //verifier requests proof
-            string proofReq = Utils.CreateProofRequest(prover_connection_id);
+            var proofReq = Utils.CreateProofRequest(prover_connection_id);
             JsonDocument.Parse(proofReq);
 
             var clientRequester = new HttpClient();
-            HttpResponseMessage httpresult = clientRequester.
-                PostAsync(APIEndpoint + $"/present-proof-2.0/send-request",
+            var httpresult = clientRequester.PostAsync(APIEndpoint + $"/present-proof-2.0/send-request",
                 new StringContent(proofReq, Encoding.UTF8, "application/json")).Result;
             var resultJson = httpresult.Content.ReadAsStringAsync().Result;
-            var requester_pres_ex_id = JsonDocument.Parse(resultJson).
-                RootElement.GetProperty("pres_ex_id").ToString();
+            var requester_pres_ex_id = JsonDocument.Parse(resultJson).RootElement.GetProperty("pres_ex_id").ToString();
             Console.WriteLine($"Proof requested [{requester_pres_ex_id}]");
 
             //give prove time to respond
             Thread.Sleep(3000);
 
             //verifier verifies presentation
-            HttpResponseMessage verifyPresentationResult = clientRequester.
-                PostAsync(APIEndpoint +
-                    $"/present-proof-2.0/records/{requester_pres_ex_id}/verify-presentation", null).Result;
-            if (verifyPresentationResult.IsSuccessStatusCode)
+            var verifyPresentationResult = clientRequester.PostAsync(APIEndpoint +
+                                                                     $"/present-proof-2.0/records/{requester_pres_ex_id}/verify-presentation", null).Result;
+            if (!verifyPresentationResult.IsSuccessStatusCode)
             {
-                var jsonDoc = JsonDocument.Parse(verifyPresentationResult.Content.ReadAsStringAsync().Result);
-                var verified = jsonDoc.RootElement.GetProperty("verified").GetString();
-                if (verified == "true")
-                {
-                    ObjectEnumerator objEnum = jsonDoc.RootElement.GetProperty("by_format")
-                        .GetProperty("pres")
-                        .GetProperty("indy")
-                        .GetProperty("requested_proof")
-                        .GetProperty("revealed_attrs").EnumerateObject();
-                    foreach (var item in objEnum)
-                    {
-                        var key = item.Name.Split('_')[1];
-                        var value = item.Value.GetProperty("raw").ToString();
-                        result.Add(key, value);
-                    }
-                }
+                return result;
             }
+
+            var jsonDoc = JsonDocument.Parse(verifyPresentationResult.Content.ReadAsStringAsync().Result);
+            var verified = jsonDoc.RootElement.GetProperty("verified").GetString();
+            if (verified != "true")
+            {
+                return result;
+            }
+
+            var objEnum = jsonDoc.RootElement.GetProperty("by_format")
+                .GetProperty("pres")
+                .GetProperty("indy")
+                .GetProperty("requested_proof")
+                .GetProperty("revealed_attrs").EnumerateObject();
+            foreach (var item in objEnum)
+            {
+                var key = item.Name.Split('_')[1];
+                var value = item.Value.GetProperty("raw").ToString();
+                result.Add(key, value);
+            }
+
             return result;
         }
-
     }
 }

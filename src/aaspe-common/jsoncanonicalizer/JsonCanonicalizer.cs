@@ -15,433 +15,147 @@
  *
  */
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
+using aaspe_common.jsoncanonicalizer;
 using Org.Webpki.Es6NumberSerialization;
 
-// JSON canonicalizer for .NET Core
+namespace Org.Webpki.JsonCanonicalizer;
 
-namespace Org.Webpki.JsonCanonicalizer
+public class JsonCanonicalizer
 {
-    public class JsonCanonicalizer
+    private const string NullValue = "null";
+    private const char ObjectStart = '{';
+    private const char ObjectEnd = '}';
+    private const char ArrayStart = '[';
+    private const char ArrayEnd = ']';
+    private const char Comma = ',';
+    private const char Colon = ':';
+    private const char Quote = '"';
+    private const string UnicodeFormat = "x04";
+    private const string UnicodePrefix = "\\u";
+
+    private readonly StringBuilder _buffer;
+    private Dictionary<Type, Action<object>> _serializationActions;
+
+    private static readonly Dictionary<char, string> EscapeSequences = new()
     {
-        StringBuilder buffer;
+        { '\n', "\\n" },
+        { '\b', "\\b" },
+        { '\f', "\\f" },
+        { '\r', "\\r" },
+        { '\t', "\\t" },
+        { '"', "\\\"" },
+        { '\\', "\\\\" }
+    };
 
-        public JsonCanonicalizer(string jsonData)
+    public JsonCanonicalizer(string jsonData)
+    {
+        _buffer = new StringBuilder();
+        InitializeSerializationActions();
+        Serialize(new JsonDecoder().Decode(jsonData));
+    }
+
+    public JsonCanonicalizer(byte[] jsonData)
+        : this(new UTF8Encoding(false, true).GetString(jsonData))
+    {
+    }
+
+    public string GetEncodedString()
+    {
+        return _buffer.ToString();
+    }
+
+    public IEnumerable<byte> GetEncodedUTF8()
+    {
+        return new UTF8Encoding(false, true).GetBytes(GetEncodedString());
+    }
+
+    private void InitializeSerializationActions()
+    {
+        _serializationActions = new Dictionary<Type, Action<object>>
         {
-            buffer = new StringBuilder();
-            Serialize(new JsonDecoder(jsonData).root);
+            { typeof(SortedDictionary<string, object>), o => SerializeObject((SortedDictionary<string, object>)o) },
+            { typeof(List<object>), o => SerializeArray((List<object?>)o) },
+            { typeof(string), o => SerializeString((string)o) },
+            { typeof(bool), o => _buffer.Append(o.ToString()?.ToLowerInvariant()) },
+            { typeof(double), o => _buffer.Append(NumberToJson.SerializeNumber((double)o)) }
+        };
+    }
+
+    private void Serialize(object? o)
+    {
+        if (o == null)
+        {
+            _buffer.Append(NullValue);
+            return;
         }
 
-        public JsonCanonicalizer(byte[] jsonData)
-            : this(new UTF8Encoding(false, true).GetString(jsonData))
+        var objectType = o.GetType();
+        if (_serializationActions.ContainsKey(objectType))
         {
-
+            _serializationActions[objectType](o);
         }
-
-        private void Escape(char c)
+        else
         {
-            buffer.Append('\\').Append(c);
-        }
-
-        private void SerializeString(string value)
-        {
-            buffer.Append('"');
-            foreach (char c in value)
-            {
-                switch (c)
-                {
-                    case '\n':
-                        Escape('n');
-                        break;
-
-                    case '\b':
-                        Escape('b');
-                        break;
-
-                    case '\f':
-                        Escape('f');
-                        break;
-
-                    case '\r':
-                        Escape('r');
-                        break;
-
-                    case '\t':
-                        Escape('t');
-                        break;
-
-                    case '"':
-                    case '\\':
-                        Escape(c);
-                        break;
-
-                    default:
-                        if (c < ' ')
-                        {
-                            buffer.Append("\\u").Append(((int)c).ToString("x04"));
-                        }
-                        else
-                        {
-                            buffer.Append(c);
-                        }
-                        break;
-                }
-            }
-            buffer.Append('"');
-        }
-
-        void Serialize(object o)
-        {
-            if (o is SortedDictionary<string, object>)
-            {
-                buffer.Append('{');
-                bool next = false;
-                foreach (var keyValuePair in (SortedDictionary<string, object>)o)
-                {
-                    if (next)
-                    {
-                        buffer.Append(',');
-                    }
-                    next = true;
-                    SerializeString(keyValuePair.Key);
-                    buffer.Append(':');
-                    Serialize(keyValuePair.Value);
-                }
-                buffer.Append('}');
-            }
-            else if (o is List<object>)
-            {
-                buffer.Append('[');
-                bool next = false;
-                foreach (object value in (List<object>)o)
-                {
-                    if (next)
-                    {
-                        buffer.Append(',');
-                    }
-                    next = true;
-                    Serialize(value);
-                }
-                buffer.Append(']');
-            }
-            else if (o == null)
-            {
-                buffer.Append("null");
-            }
-            else if (o is String)
-            {
-                SerializeString((string)o);
-            }
-            else if (o is Boolean)
-            {
-                buffer.Append(o.ToString().ToLowerInvariant());
-            }
-            else if (o is Double)
-            {
-                buffer.Append(NumberToJson.SerializeNumber((Double)o));
-            }
-            else
-            {
-                throw new InvalidOperationException("Unknown object: " + o);
-            }
-        }
-
-        public string GetEncodedString()
-        {
-            return buffer.ToString();
-        }
-
-        public byte[] GetEncodedUTF8()
-        {
-            return new UTF8Encoding(false, true).GetBytes(GetEncodedString());
+            throw new InvalidOperationException($"Unknown object type: {objectType}");
         }
     }
 
-    static class JsonToNumber
+    private void SerializeObject(SortedDictionary<string, object> objects)
     {
-        public static double Convert(string number)
+        _buffer.Append(ObjectStart);
+        var next = false;
+        foreach (var keyValuePair in objects)
         {
-            return double.Parse(number, NumberStyles.Float, CultureInfo.InvariantCulture);
+            if (next) _buffer.Append(Comma);
+            next = true;
+            SerializeString(keyValuePair.Key);
+            _buffer.Append(Colon);
+            Serialize(keyValuePair.Value);
         }
+        _buffer.Append(ObjectEnd);
     }
 
-    class JsonDecoder
+    private void SerializeArray(List<object?> array)
     {
-        const char LEFT_CURLY_BRACKET = '{';
-        const char RIGHT_CURLY_BRACKET = '}';
-        const char DOUBLE_QUOTE = '"';
-        const char COLON_CHARACTER = ':';
-        const char LEFT_BRACKET = '[';
-        const char RIGHT_BRACKET = ']';
-        const char COMMA_CHARACTER = ',';
-        const char BACK_SLASH = '\\';
-
-        static Regex NUMBER_PATTERN = new Regex("^-?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?$");
-        static Regex BOOLEAN_PATTERN = new Regex("^true|false$");
-
-        int index;
-        string jsonData;
-
-        internal object root;
-
-        internal JsonDecoder(string jsonData)
+        _buffer.Append(ArrayStart);
+        var next = false;
+        foreach (var item in array)
         {
-            this.jsonData = jsonData;
-            if (TestNextNonWhiteSpaceChar() == LEFT_BRACKET)
-            {
-                Scan();
-                root = ParseArray();
-            }
-            else
-            {
-                ScanFor(LEFT_CURLY_BRACKET);
-                root = ParseObject();
-            }
-            while (index < jsonData.Length)
-            {
-                if (!IsWhiteSpace(jsonData[index++]))
-                {
-                    throw new IOException("Improperly terminated JSON object");
-                }
-            }
+            if (next) _buffer.Append(Comma);
+            next = true;
+            Serialize(item);
+        }
+        _buffer.Append(ArrayEnd);
+    }
+
+    private void SerializeString(string value)
+    {
+        var result = new StringBuilder();
+        result.Append(Quote);
+
+        foreach (var c in value)
+        {
+            EscapeCharacter(result, c);
         }
 
-        object ParseElement()
+        result.Append(Quote);
+        _buffer.Append(result);
+    }
+
+    private void EscapeCharacter(StringBuilder result, char c)
+    {
+        if (EscapeSequences.TryGetValue(c, out var escapeSequence))
         {
-            switch (Scan())
-            {
-                case LEFT_CURLY_BRACKET:
-                    return ParseObject();
-
-                case DOUBLE_QUOTE:
-                    return ParseQuotedString();
-
-                case LEFT_BRACKET:
-                    return ParseArray();
-
-                default:
-                    return ParseSimpleType();
-            }
+            result.Append(escapeSequence);
         }
-
-        object ParseObject()
+        else if (c < ' ')
         {
-            SortedDictionary<string, object> dict =
-                new SortedDictionary<string, object>(StringComparer.Ordinal);
-            bool next = false;
-            while (TestNextNonWhiteSpaceChar() != RIGHT_CURLY_BRACKET)
-            {
-                if (next)
-                {
-                    ScanFor(COMMA_CHARACTER);
-                }
-                next = true;
-                ScanFor(DOUBLE_QUOTE);
-                string name = ParseQuotedString();
-                ScanFor(COLON_CHARACTER);
-                dict.Add(name, ParseElement());
-            }
-            Scan();
-            return dict;
+            result.Append(UnicodePrefix).Append(((int)c).ToString(UnicodeFormat));
         }
-
-        object ParseArray()
+        else
         {
-            var list = new List<object>();
-            bool next = false;
-            while (TestNextNonWhiteSpaceChar() != RIGHT_BRACKET)
-            {
-                if (next)
-                {
-                    ScanFor(COMMA_CHARACTER);
-                }
-                else
-                {
-                    next = true;
-                }
-                list.Add(ParseElement());
-            }
-            Scan();
-            return list;
-        }
-
-        object ParseSimpleType()
-        {
-            index--;
-            StringBuilder tempBuffer = new StringBuilder();
-            char c;
-            while ((c = TestNextNonWhiteSpaceChar()) != COMMA_CHARACTER && c != RIGHT_BRACKET && c != RIGHT_CURLY_BRACKET)
-            {
-                if (IsWhiteSpace(c = NextChar()))
-                {
-                    break;
-                }
-                tempBuffer.Append(c);
-            }
-            String token = tempBuffer.ToString();
-            if (token.Length == 0)
-            {
-                throw new IOException("Missing argument");
-            }
-            if (NUMBER_PATTERN.IsMatch(token))
-            {
-                return JsonToNumber.Convert(token);
-            }
-            else if (BOOLEAN_PATTERN.IsMatch(token))
-            {
-                return Boolean.Parse(token);
-            }
-            else if (token.Equals("null"))
-            {
-                return null;
-            }
-            throw new IOException("Unrecognized or malformed JSON token: " + token);
-        }
-
-        String ParseQuotedString()
-        {
-            StringBuilder result = new StringBuilder();
-            while (true)
-            {
-                char c = NextChar();
-                if (c < ' ')
-                {
-                    throw new IOException(c == '\n' ? "Unterminated string literal" :
-                        "Unescaped control character: 0x" + ((int)c).ToString("x02"));
-                }
-                if (c == DOUBLE_QUOTE)
-                {
-                    break;
-                }
-                if (c == BACK_SLASH)
-                {
-                    switch (c = NextChar())
-                    {
-                        case '"':
-                        case '\\':
-                        case '/':
-                            break;
-
-                        case 'b':
-                            c = '\b';
-                            break;
-
-                        case 'f':
-                            c = '\f';
-                            break;
-
-                        case 'n':
-                            c = '\n';
-                            break;
-
-                        case 'r':
-                            c = '\r';
-                            break;
-
-                        case 't':
-                            c = '\t';
-                            break;
-
-                        case 'u':
-                            c = (char)0;
-                            for (int i = 0; i < 4; i++)
-                            {
-                                c = (char)((c << 4) + GetHexChar());
-                            }
-                            break;
-
-                        default:
-                            throw new IOException("Unsupported escape:" + c);
-                    }
-                }
-                result.Append(c);
-            }
-            return result.ToString();
-        }
-
-        char GetHexChar()
-        {
-            char c = NextChar();
-            switch (c)
-            {
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    return (char)(c - '0');
-
-                case 'a':
-                case 'b':
-                case 'c':
-                case 'd':
-                case 'e':
-                case 'f':
-                    return (char)(c - 'a' + 10);
-
-                case 'A':
-                case 'B':
-                case 'C':
-                case 'D':
-                case 'E':
-                case 'F':
-                    return (char)(c - 'A' + 10);
-            }
-            throw new IOException("Bad hex in \\u escape: " + c);
-        }
-
-        char TestNextNonWhiteSpaceChar()
-        {
-            int save = index;
-            char c = Scan();
-            index = save;
-            return c;
-        }
-
-        void ScanFor(char expected)
-        {
-            char c = Scan();
-            if (c != expected)
-            {
-                throw new IOException("Expected '" + expected + "' but got '" + c + "'");
-            }
-        }
-
-        char NextChar()
-        {
-            if (index < jsonData.Length)
-            {
-                return jsonData[index++];
-            }
-            throw new IOException("Unexpected EOF reached");
-        }
-
-        bool IsWhiteSpace(char c)
-        {
-            return c == 0x20 || c == 0x0A || c == 0x0D || c == 0x09;
-        }
-
-        char Scan()
-        {
-            while (true)
-            {
-                char c = NextChar();
-                if (IsWhiteSpace(c))
-                {
-                    continue;
-                }
-                return c;
-            }
+            result.Append(c);
         }
     }
 }
